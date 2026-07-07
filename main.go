@@ -56,7 +56,20 @@ func main() {
 		return
 	}
 
+	// Главная страница
 	http.HandleFunc("/", handleIndex)
+	
+	// ЯВНЫЕ МАРШРУТЫ ДЛЯ СТИЛЕЙ И СКРИПТОВ (Решают проблему чёрно-белого экрана)
+	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		http.ServeFile(w, r, "./style.css")
+	})
+	http.HandleFunc("/script.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		http.ServeFile(w, r, "./script.js")
+	})
+
+	// API эндпоинты
 	http.HandleFunc("/api/documents", handleDocuments)
 	http.HandleFunc("/api/documents/", handleSingleDocument)
 
@@ -67,6 +80,11 @@ func main() {
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
+	// Если пришёл запрос на несуществующий файл, не отдаём index.html
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
 	tmpl, err := template.ParseFiles("index.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -114,7 +132,6 @@ func handleDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Маршрут обрабатывает как обновление (PUT), так и удаление (DELETE)
 func handleSingleDocument(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	parts := strings.Split(r.URL.Path, "/")
